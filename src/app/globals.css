@@ -1,0 +1,67 @@
+@import "tailwindcss";
+
+:root {
+  --background: #f4f5f7;
+  --surface: #ffffff;
+  --surface-muted: #f0f1f4;
+  --border: #e4e6eb;
+  --foreground: #17181c;
+  --foreground-muted: #6b7280;
+  --accent: #16a34a;
+  --accent-foreground: #ffffff;
+  --danger: #dc2626;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-surface: var(--surface);
+  --color-surface-muted: var(--surface-muted);
+  --color-border: var(--border);
+  --color-foreground: var(--foreground);
+  --color-foreground-muted: var(--foreground-muted);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-danger: var(--danger);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #0d0e11;
+    --surface: #17181c;
+    --surface-muted: #1e2025;
+    --border: #2a2c33;
+    --foreground: #f2f3f5;
+    --foreground-muted: #9aa0ab;
+    --accent: #22c55e;
+    --accent-foreground: #05130a;
+    --danger: #f87171;
+  }
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans), Arial, Helvetica, sans-serif;
+}
+
+input,
+select,
+textarea {
+  font-family: inherit;
+}
+
+/* Firefox number input spinner cleanup */
+input[type="number"] {
+  -moz-appearance: textfield;
+}
+input[type="number"]::-webkit-outer-spin-button,
+input[type="number"]::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
