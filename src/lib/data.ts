@@ -1,35 +1,26 @@
 import { addMonths, startOfDay, startOfMonth, startOfToday } from "date-fns";
-import { prisma } from "@/lib/prisma";
-import { Prisma } from "@/generated/prisma/client";
+import { obterContentor } from "@/composition/container";
 
 export function getCategories() {
-  return prisma.category.findMany({ orderBy: { order: "asc" } });
+  return obterContentor().categorias.listar();
 }
 
 export async function getDashboardData() {
+  const dependencias = obterContentor();
   const monthStart = startOfMonth(new Date());
   const nextMonthStart = addMonths(monthStart, 1);
   const todayStart = startOfToday();
 
-  const [categories, monthExpenses, todayAgg, recentExpenses] = await Promise.all([
+  const [categories, monthExpenses, recentExpenses] = await Promise.all([
     getCategories(),
-    prisma.expense.findMany({
-      where: { date: { gte: monthStart, lt: nextMonthStart } },
-      select: { amount: true, categoryId: true },
-    }),
-    prisma.expense.aggregate({
-      where: { date: { gte: todayStart } },
-      _sum: { amount: true },
-    }),
-    prisma.expense.findMany({
-      orderBy: { date: "desc" },
-      take: 8,
-      include: { category: true },
-    }),
+    dependencias.despesas.listar({ from: monthStart, to: nextMonthStart }),
+    dependencias.despesas.recentes(8),
   ]);
 
   const monthTotal = monthExpenses.reduce((sum, e) => sum + e.amount, 0);
-  const todayTotal = todayAgg._sum.amount ?? 0;
+  const todayTotal = monthExpenses
+    .filter((e) => e.date >= todayStart)
+    .reduce((sum, e) => sum + e.amount, 0);
 
   const totalsByCategory = new Map<string, number>();
   for (const expense of monthExpenses) {
@@ -64,34 +55,30 @@ export type HistoryFilters = {
 };
 
 export async function getHistory(filters: HistoryFilters) {
-  const where: Prisma.ExpenseWhereInput = {};
+  const dependencias = obterContentor();
+  const dbFilters: { from?: Date; to?: Date; categoryId?: string; search?: string } = {};
 
   if (filters.month) {
     const [year, month] = filters.month.split("-").map(Number);
     if (year && month) {
-      const start = startOfMonth(new Date(year, month - 1, 1));
-      const end = addMonths(start, 1);
-      where.date = { gte: start, lt: end };
+      dbFilters.from = startOfMonth(new Date(year, month - 1, 1));
+      dbFilters.to = addMonths(dbFilters.from, 1);
     }
   }
-  if (filters.categoryId) {
-    where.categoryId = filters.categoryId;
-  }
-  if (filters.search) {
-    where.note = { contains: filters.search };
-  }
+  if (filters.categoryId) dbFilters.categoryId = filters.categoryId;
+  if (filters.search) dbFilters.search = filters.search;
 
-  const [expenses, categories, total] = await Promise.all([
-    prisma.expense.findMany({
-      where,
-      orderBy: { date: "desc" },
-      include: { category: true },
-    }),
+  const [expenses, categories] = await Promise.all([
+    dependencias.despesas.listar(dbFilters),
     getCategories(),
-    prisma.expense.aggregate({ where, _sum: { amount: true } }),
   ]);
+  const total = expenses.reduce((sum, e) => sum + e.amount, 0);
 
-  return { expenses, categories, total: total._sum.amount ?? 0 };
+  return { expenses, categories, total };
+}
+
+export async function getUsers() {
+  return obterContentor().perfis.listar();
 }
 
 /** Groups already-sorted (desc) expenses by calendar day, preserving order. */

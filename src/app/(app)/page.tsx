@@ -15,9 +15,15 @@ export default async function Home() {
   return (
     <div className="flex flex-col gap-5">
       <SummaryCards monthTotal={monthTotal} todayTotal={todayTotal} monthCount={monthCount} />
-      <QuickAddPanel categories={categories} />
-      <CategoryBreakdown breakdown={breakdown} monthTotal={monthTotal} />
-      <RecentExpenses expenses={recentExpenses} />
+      <div className="animate-entrada" style={{ animationDelay: "180ms" }}>
+        <QuickAddPanel categories={categories} />
+      </div>
+      <div className="animate-entrada" style={{ animationDelay: "260ms" }}>
+        <CategoryBreakdown breakdown={breakdown} monthTotal={monthTotal} />
+      </div>
+      <div className="animate-entrada" style={{ animationDelay: "340ms" }}>
+        <RecentExpenses expenses={recentExpenses} />
+      </div>
     </div>
   );
 }
