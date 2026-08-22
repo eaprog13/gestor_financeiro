@@ -15,6 +15,31 @@ export const expenseSchema = z.object({
     .transform((v) => (v && v.trim().length > 0 ? v.trim() : undefined)),
 });
 
+export const loginSchema = z.object({
+  email: z.string().trim().min(1, "Indica o email.").email("Email inválido."),
+  password: z.string().min(1, "Indica a password."),
+});
+
+export const userSchema = z.object({
+  name: z.string().trim().min(2, "Nome demasiado curto.").max(80),
+  email: z.string().trim().min(1, "Indica o email.").email("Email inválido."),
+  password: z.string().min(8, "A password tem de ter pelo menos 8 caracteres."),
+});
+
+export const updateUserSchema = z.object({
+  name: userSchema.shape.name,
+});
+
+export const newPasswordSchema = z
+  .object({
+    password: z.string().min(8, "A password tem de ter pelo menos 8 caracteres."),
+    confirmPassword: z.string(),
+  })
+  .refine((data) => data.password === data.confirmPassword, {
+    error: "As passwords não coincidem.",
+    path: ["confirmPassword"],
+  });
+
 export const categorySchema = z.object({
   name: z
     .string()

@@ -52,3 +52,22 @@ export function formatMonthLabel(value: Date) {
 export function toMonthInputValue(value: Date = new Date()) {
   return `${value.getFullYear()}-${String(value.getMonth() + 1).padStart(2, "0")}`;
 }
+
+const monthShortFormatter = new Intl.DateTimeFormat("pt-PT", { month: "short" });
+
+/** "Ago", "Set", ... — compact month label for chart axes. */
+export function formatMonthShort(value: Date) {
+  const label = monthShortFormatter.format(value).replace(/\.$/, "");
+  return label.charAt(0).toUpperCase() + label.slice(1);
+}
+
+/** "4/8" — compact day/month label for chart axes. */
+export function formatShortDate(value: Date) {
+  return `${value.getDate()}/${value.getMonth() + 1}`;
+}
+
+/** "+12%" / "-8%" / "0%" — signed percentage for deltas between periods. */
+export function formatPercent(value: number) {
+  const sign = value > 0 ? "+" : "";
+  return `${sign}${value.toFixed(0)}%`;
+}

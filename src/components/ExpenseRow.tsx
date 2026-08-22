@@ -1,7 +1,7 @@
 import { CategoryIcon } from "@/components/CategoryIcon";
 import { DeleteExpenseButton } from "@/components/DeleteExpenseButton";
 import { formatCurrency, formatDate } from "@/lib/format";
-import type { Category, Expense } from "@/generated/prisma/client";
+import type { Category, Expense } from "@/core/types";
 
 export function ExpenseRow({
   expense,

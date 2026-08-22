@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { ExpenseRow } from "@/components/ExpenseRow";
-import type { Category, Expense } from "@/generated/prisma/client";
+import type { Category, Expense } from "@/core/types";
 
 export function RecentExpenses({
   expenses,

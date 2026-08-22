@@ -5,7 +5,7 @@ import { X } from "lucide-react";
 import { createExpense, type ExpenseFormState } from "@/app/actions";
 import { CategoryIcon } from "@/components/CategoryIcon";
 import { toDateInputValue } from "@/lib/format";
-import type { Category } from "@/generated/prisma/client";
+import type { Category } from "@/core/types";
 
 const idleState: ExpenseFormState = { status: "idle" };
 
