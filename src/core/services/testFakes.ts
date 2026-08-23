@@ -47,6 +47,12 @@ export class RepositorioCategoriaFalso {
     Object.assign(category, dados);
     return category;
   }
+  async reordenar(ids: string[]) {
+    for (const [indice, id] of ids.entries()) {
+      const category = this.categorias.find((c) => c.id === id);
+      if (category) category.order = indice;
+    }
+  }
   async remover(id: string) {
     this.categorias = this.categorias.filter((c) => c.id !== id);
   }

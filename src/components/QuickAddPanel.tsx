@@ -4,6 +4,7 @@ import { useRef, useState, useTransition, type FormEvent } from "react";
 import { X } from "lucide-react";
 import { createExpense, type ExpenseFormState } from "@/app/actions";
 import { CategoryIcon } from "@/components/CategoryIcon";
+import { CategoryGrid } from "@/components/CategoryGrid";
 import { toDateInputValue } from "@/lib/format";
 import type { Category } from "@/core/types";
 
@@ -15,6 +16,10 @@ export function QuickAddPanel({ categories }: { categories: Category[] }) {
   const [toast, setToast] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
   const formRef = useRef<HTMLFormElement>(null);
+  // Arrastar para reordenar é um modo à parte, não o toque normal: os dois
+  // gestos (tocar para escolher / arrastar para mover) competiam pelo
+  // mesmo alvo se estivessem sempre ativos ao mesmo tempo.
+  const [aReordenar, setAReordenar] = useState(false);
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -36,36 +41,51 @@ export function QuickAddPanel({ categories }: { categories: Category[] }) {
 
   return (
     <div className="rounded-2xl border border-border bg-surface p-4 sm:p-5">
-      <div className="mb-3 flex items-center justify-between">
+      <div className="mb-3 flex items-center justify-between gap-2">
         <h2 className="text-sm font-semibold text-foreground-muted">
           Registo rápido
         </h2>
-        {toast && (
-          <span className="rounded-full bg-accent/15 px-3 py-1 text-xs font-medium text-accent">
-            {toast}
-          </span>
-        )}
+        <div className="flex items-center gap-2">
+          {toast && (
+            <span className="rounded-full bg-accent/15 px-3 py-1 text-xs font-medium text-accent">
+              {toast}
+            </span>
+          )}
+          {!selected && (
+            <button
+              type="button"
+              onClick={() => setAReordenar((v) => !v)}
+              className="text-xs font-medium text-foreground-muted hover:text-accent"
+            >
+              {aReordenar ? "Concluído" : "Reordenar"}
+            </button>
+          )}
+        </div>
       </div>
 
       {!selected ? (
-        <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
-          {categories.map((category) => (
-            <button
-              key={category.id}
-              type="button"
-              onClick={() => {
-                setError(null);
-                setSelected(category);
-              }}
-              className="flex flex-col items-center gap-2 rounded-xl border border-transparent bg-surface-muted px-2 py-3 text-center transition-colors hover:border-border active:scale-[0.98]"
-            >
-              <CategoryIcon icon={category.icon} color={category.color} size={18} />
-              <span className="text-xs font-medium leading-tight">
-                {category.name}
-              </span>
-            </button>
-          ))}
-        </div>
+        aReordenar ? (
+          <CategoryGrid categories={categories} />
+        ) : (
+          <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
+            {categories.map((category) => (
+              <button
+                key={category.id}
+                type="button"
+                onClick={() => {
+                  setError(null);
+                  setSelected(category);
+                }}
+                className="flex flex-col items-center gap-2 rounded-xl border border-transparent bg-surface-muted px-2 py-3 text-center transition-colors hover:border-border active:scale-[0.98]"
+              >
+                <CategoryIcon icon={category.icon} color={category.color} size={18} />
+                <span className="text-xs font-medium leading-tight">
+                  {category.name}
+                </span>
+              </button>
+            ))}
+          </div>
+        )
       ) : (
         <form
           ref={formRef}

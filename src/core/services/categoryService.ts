@@ -45,6 +45,28 @@ export async function atualizarCategoria(
   return { ok: true, category: updated };
 }
 
+export type ResultadoReordenarCategorias = { ok: true } | { ok: false; message: string };
+
+export async function reordenarCategorias(
+  dependencias: Dependencias,
+  ids: string[]
+): Promise<ResultadoReordenarCategorias> {
+  const existentes = await dependencias.categorias.listar();
+
+  // "ids" tem de ser exatamente o conjunto de categorias existentes (só a
+  // ordem pode mudar) — protege contra um pedido malformado que apagasse
+  // categorias da ordenação por engano (ex.: um id repetido, ou a lista
+  // dessincronizada do que está no ecrã de quem está a arrastar).
+  const idsExistentes = new Set(existentes.map((c) => c.id));
+  const mesmoConjunto = ids.length === existentes.length && ids.every((id) => idsExistentes.has(id));
+  if (!mesmoConjunto) {
+    return { ok: false, message: "Lista de categorias desatualizada — recarrega a página e tenta de novo." };
+  }
+
+  await dependencias.categorias.reordenar(ids);
+  return { ok: true };
+}
+
 export type ResultadoRemoverCategoria = { ok: true } | { ok: false; message: string };
 
 export async function removerCategoria(

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { criarDependenciasFalsas } from "@/core/services/testFakes";
-import { atualizarCategoria, criarCategoria, removerCategoria } from "@/core/services/categoryService";
+import { atualizarCategoria, criarCategoria, reordenarCategorias, removerCategoria } from "@/core/services/categoryService";
 
 describe("criarCategoria", () => {
   it("cria a categoria com order = número de categorias existentes", async () => {
@@ -70,6 +70,33 @@ describe("atualizarCategoria", () => {
       ok: true,
       category: { ...base, name: "Base 2", icon: "Car", color: "#111111" },
     });
+  });
+});
+
+describe("reordenarCategorias", () => {
+  it("aplica a nova ordem (posição em ids -> order)", async () => {
+    const deps = criarDependenciasFalsas();
+    const a = await criarCategoria(deps, { name: "A", icon: "Home", color: "#000000" });
+    const b = await criarCategoria(deps, { name: "B", icon: "Home", color: "#000000" });
+    const c = await criarCategoria(deps, { name: "C", icon: "Home", color: "#000000" });
+    if (!a.ok || !b.ok || !c.ok) throw new Error("setup falhou");
+
+    const resultado = await reordenarCategorias(deps, [c.category.id, a.category.id, b.category.id]);
+
+    expect(resultado).toEqual({ ok: true });
+    const lista = await deps.categorias.listar();
+    expect(lista.map((cat) => cat.name)).toEqual(["C", "A", "B"]);
+  });
+
+  it("recusa se a lista de ids não corresponder às categorias existentes", async () => {
+    const deps = criarDependenciasFalsas();
+    const a = await criarCategoria(deps, { name: "A", icon: "Home", color: "#000000" });
+    await criarCategoria(deps, { name: "B", icon: "Home", color: "#000000" });
+    if (!a.ok) throw new Error("setup falhou");
+
+    // Falta o id de "B" — lista dessincronizada.
+    const resultado = await reordenarCategorias(deps, [a.category.id]);
+    expect(resultado.ok).toBe(false);
   });
 });
 
