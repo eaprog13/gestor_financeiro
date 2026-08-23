@@ -26,5 +26,7 @@ export type Profile = {
   id: string;
   email: string;
   name: string;
+  /** Cor de destaque da própria página — ver ThemeId em src/lib/theme.ts. */
+  theme: string;
   createdAt: Date;
 };

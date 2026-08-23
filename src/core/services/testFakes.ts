@@ -41,6 +41,12 @@ export class RepositorioCategoriaFalso {
     this.categorias.push(category);
     return category;
   }
+  async atualizar(id: string, dados: { name: string; icon: string; color: string }): Promise<Category> {
+    const category = this.categorias.find((c) => c.id === id);
+    if (!category) throw new Error("categoria não encontrada");
+    Object.assign(category, dados);
+    return category;
+  }
   async remover(id: string) {
     this.categorias = this.categorias.filter((c) => c.id !== id);
   }

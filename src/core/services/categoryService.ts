@@ -19,6 +19,32 @@ export async function criarCategoria(
   return { ok: true, category };
 }
 
+export type ResultadoAtualizarCategoria =
+  | { ok: true; category: Category }
+  | { ok: false; message: string };
+
+export async function atualizarCategoria(
+  dependencias: Dependencias,
+  id: string,
+  dados: { name: string; icon: string; color: string }
+): Promise<ResultadoAtualizarCategoria> {
+  const category = await dependencias.categorias.obterPorId(id);
+  if (!category) {
+    return { ok: false, message: "Categoria não encontrada." };
+  }
+
+  // Só rejeita por nome duplicado se o nome mudou para o de OUTRA categoria
+  // — sem este cuidado, guardar sem alterar o nome (só cor/ícone) rejeitava
+  // sempre, por a categoria "colidir" consigo própria.
+  const existing = await dependencias.categorias.obterPorNome(dados.name);
+  if (existing && existing.id !== id) {
+    return { ok: false, message: "Já existe uma categoria com esse nome." };
+  }
+
+  const updated = await dependencias.categorias.atualizar(id, dados);
+  return { ok: true, category: updated };
+}
+
 export type ResultadoRemoverCategoria = { ok: true } | { ok: false; message: string };
 
 export async function removerCategoria(

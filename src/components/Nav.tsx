@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Gauge, LayoutGrid, ListTree, Menu, Tags, Users, X } from "lucide-react";
+import { Gauge, LayoutGrid, ListTree, Menu, Palette, Tags, Users, X } from "lucide-react";
 import clsx from "clsx";
 import { LogoutButton } from "@/components/LogoutButton";
 
@@ -16,6 +16,7 @@ const links = [
   { href: "/metricas", label: "Métricas", icon: Gauge },
   { href: "/categorias", label: "Categorias", icon: Tags },
   { href: "/settings/users", label: "Utilizadores", icon: Users },
+  { href: "/preferencias", label: "Preferências", icon: Palette },
 ];
 
 function isActive(pathname: string, href: string) {

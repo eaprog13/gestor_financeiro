@@ -47,6 +47,17 @@ export class RepositorioCategoriaSupabase implements RepositorioCategoria {
     return paraCategoria(data);
   }
 
+  async atualizar(id: string, dados: { name: string; icon: string; color: string }): Promise<Category> {
+    const { data, error } = await this.bd
+      .from("categories")
+      .update({ name: dados.name, icon: dados.icon, color: dados.color })
+      .eq("id", id)
+      .select("*")
+      .single();
+    if (error || !data) throw new Error(`[categories.atualizar] ${error?.message}`);
+    return paraCategoria(data);
+  }
+
   async remover(id: string): Promise<void> {
     const { error } = await this.bd.from("categories").delete().eq("id", id);
     if (error) throw new Error(`[categories.remover] ${error.message}`);
