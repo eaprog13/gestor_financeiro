@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { obterContentor } from "@/composition/container";
-import { atualizarCategoria, criarCategoria, removerCategoria } from "@/core/services/categoryService";
+import { atualizarCategoria, criarCategoria, reordenarCategorias, removerCategoria } from "@/core/services/categoryService";
 import { criarDespesa, removerDespesa } from "@/core/services/expenseService";
 import { requireSession, destroySession } from "@/lib/auth/session";
 import { categorySchema, expenseSchema } from "@/lib/validation";
@@ -130,6 +130,17 @@ export async function updateCategory(
   revalidateAll();
 
   return { status: "success", message: `Categoria "${resultado.category.name}" atualizada.` };
+}
+
+export async function reorderCategories(ids: string[]): Promise<{ ok: boolean; message?: string }> {
+  await requireSession();
+  const resultado = await reordenarCategorias(obterContentor(), ids);
+  if (!resultado.ok) {
+    return { ok: false, message: resultado.message };
+  }
+
+  revalidateAll();
+  return { ok: true };
 }
 
 export async function deleteCategory(

@@ -58,6 +58,18 @@ export class RepositorioCategoriaSupabase implements RepositorioCategoria {
     return paraCategoria(data);
   }
 
+  async reordenar(ids: string[]): Promise<void> {
+    // Um update por categoria (não há upsert em lote com valores diferentes
+    // por linha no cliente JS do Supabase sem RPC) — para o número de
+    // categorias desta app (dezenas, não milhares), é simples e rápido
+    // que chegue.
+    const resultados = await Promise.all(
+      ids.map((id, indice) => this.bd.from("categories").update({ sort_order: indice }).eq("id", id))
+    );
+    const comErro = resultados.find((r) => r.error);
+    if (comErro?.error) throw new Error(`[categories.reordenar] ${comErro.error.message}`);
+  }
+
   async remover(id: string): Promise<void> {
     const { error } = await this.bd.from("categories").delete().eq("id", id);
     if (error) throw new Error(`[categories.remover] ${error.message}`);

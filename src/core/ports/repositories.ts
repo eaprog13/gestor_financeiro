@@ -21,6 +21,8 @@ export interface RepositorioCategoria {
   contar(): Promise<number>;
   criar(dados: NewCategory): Promise<Category>;
   atualizar(id: string, dados: { name: string; icon: string; color: string }): Promise<Category>;
+  /** Novo "order" de cada categoria = a sua posição em "ids" (0, 1, 2, ...) — vem do arrastar no registo rápido. */
+  reordenar(ids: string[]): Promise<void>;
   remover(id: string): Promise<void>;
 }
 
