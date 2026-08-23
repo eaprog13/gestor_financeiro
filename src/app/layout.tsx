@@ -15,6 +15,9 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "Gastos — Gestor Financeiro",
   description: "Regista e acompanha as tuas despesas do dia a dia.",
+  // App privada (dados financeiros da família) — nunca deve aparecer em
+  // motores de busca. Ver também src/app/robots.ts.
+  robots: { index: false, follow: false, nocache: true },
 };
 
 export const viewport: Viewport = {
