@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { obterContentor } from "@/composition/container";
-import { criarCategoria, removerCategoria } from "@/core/services/categoryService";
+import { atualizarCategoria, criarCategoria, removerCategoria } from "@/core/services/categoryService";
 import { criarDespesa, removerDespesa } from "@/core/services/expenseService";
 import { requireSession, destroySession } from "@/lib/auth/session";
 import { categorySchema, expenseSchema } from "@/lib/validation";
@@ -101,6 +101,35 @@ export async function createCategory(
   revalidateAll();
 
   return { status: "success", message: `Categoria "${resultado.category.name}" criada.` };
+}
+
+export async function updateCategory(
+  id: string,
+  _prevState: CategoryFormState,
+  formData: FormData,
+): Promise<CategoryFormState> {
+  await requireSession();
+  const parsed = categorySchema.safeParse({
+    name: formData.get("name"),
+    icon: formData.get("icon"),
+    color: formData.get("color"),
+  });
+
+  if (!parsed.success) {
+    return {
+      status: "error",
+      message: parsed.error.issues[0]?.message ?? "Dados inválidos.",
+    };
+  }
+
+  const resultado = await atualizarCategoria(obterContentor(), id, parsed.data);
+  if (!resultado.ok) {
+    return { status: "error", message: resultado.message };
+  }
+
+  revalidateAll();
+
+  return { status: "success", message: `Categoria "${resultado.category.name}" atualizada.` };
 }
 
 export async function deleteCategory(

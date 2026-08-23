@@ -15,6 +15,10 @@ export async function criarUtilizador(
   return { ok: true };
 }
 
+export async function atualizarTema(dependencias: Dependencias, id: string, theme: string) {
+  return dependencias.perfis.atualizarTema(id, theme);
+}
+
 export async function atualizarUtilizador(dependencias: Dependencias, id: string, dados: { name: string }) {
   // Duas escritas — public.profiles (mostrado em /settings/users) e
   // user_metadata (fonte do nome na sessão, ver core/ports/identity.ts) —

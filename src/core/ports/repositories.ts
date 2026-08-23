@@ -20,6 +20,7 @@ export interface RepositorioCategoria {
   obterPorNome(name: string): Promise<Category | null>;
   contar(): Promise<number>;
   criar(dados: NewCategory): Promise<Category>;
+  atualizar(id: string, dados: { name: string; icon: string; color: string }): Promise<Category>;
   remover(id: string): Promise<void>;
 }
 
@@ -45,4 +46,5 @@ export interface RepositorioPerfil {
   obterPorId(id: string): Promise<Profile | null>;
   obterPorEmail(email: string): Promise<Profile | null>;
   atualizar(id: string, dados: { name: string }): Promise<Profile>;
+  atualizarTema(id: string, theme: string): Promise<Profile>;
 }

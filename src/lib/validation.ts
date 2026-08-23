@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { ICON_MAP } from "@/lib/icons";
+import { THEME_OPTIONS } from "@/lib/theme";
 
 export const expenseSchema = z.object({
   categoryId: z.string().min(1, "Escolhe uma categoria."),
@@ -28,6 +29,10 @@ export const userSchema = z.object({
 
 export const updateUserSchema = z.object({
   name: userSchema.shape.name,
+});
+
+export const themeSchema = z.object({
+  theme: z.enum(THEME_OPTIONS.map((t) => t.id) as [string, ...string[]], { error: "Tema inválido." }),
 });
 
 export const newPasswordSchema = z
