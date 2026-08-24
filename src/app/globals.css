@@ -10,6 +10,16 @@
   --accent: #16a34a;
   --accent-foreground: #ffffff;
   --danger: #dc2626;
+  /* Dourado — família própria para "isto é uma despesa grande" (ver
+   * lib/metrics.ts, classificarMagnitude). Deliberadamente distinta do
+   * verde/vermelho já usados para "gastei mais/menos que o período
+   * anterior" (KpiCard, MoversList) — uma despesa grande não é "boa" nem
+   * "má" em si, é só notável, por isso tem a sua própria cor. Amarelo/
+   * dourado (não âmbar/laranja) de propósito: --accent é escolhível pelo
+   * utilizador em /preferencias e uma das opções é precisamente "Laranja"
+   * (ver lib/theme.ts) — um tom demasiado próximo confundir-se-ia com essa
+   * cor de marca sempre que alguém a escolhesse. */
+  --flag: #a16207;
 }
 
 @theme inline {
@@ -22,6 +32,7 @@
   --color-accent: var(--accent);
   --color-accent-foreground: var(--accent-foreground);
   --color-danger: var(--danger);
+  --color-flag: var(--flag);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
@@ -37,6 +48,7 @@
     --accent: #22c55e;
     --accent-foreground: #05130a;
     --danger: #f87171;
+    --flag: #facc15;
   }
 }
 

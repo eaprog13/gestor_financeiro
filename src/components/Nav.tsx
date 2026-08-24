@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 import { Gauge, LayoutGrid, ListTree, Menu, Palette, Tags, Users, X } from "lucide-react";
 import clsx from "clsx";
 import { LogoutButton } from "@/components/LogoutButton";
+import { Logo } from "@/components/Logo";
 
 // Um único array — todos os itens com o mesmo tratamento (ícone + rótulo),
 // incluindo "Utilizadores": antes vivia à parte, como botão só-ícone
@@ -49,11 +50,8 @@ export function Nav({ userName }: { userName: string }) {
             assim o menu fica realmente centrado, independentemente de o
             logótipo e as ações terem larguras diferentes. */}
         <div className="mx-auto grid max-w-4xl grid-cols-[1fr_auto_1fr] items-center gap-3 px-4 py-3 sm:px-6">
-          <Link href="/" className="flex items-center gap-2 font-semibold tracking-tight justify-self-start">
-            <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-accent text-accent-foreground">
-              €
-            </span>
-            <span className="hidden sm:inline">Gastos</span>
+          <Link href="/" className="justify-self-start">
+            <Logo size={32} />
           </Link>
 
           <nav className="hidden gap-1 md:flex">

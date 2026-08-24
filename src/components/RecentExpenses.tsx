@@ -1,11 +1,12 @@
 import Link from "next/link";
 import { ExpenseRow } from "@/components/ExpenseRow";
 import type { Category, Expense } from "@/core/types";
+import type { ExpenseTier } from "@/lib/metrics";
 
 export function RecentExpenses({
   expenses,
 }: {
-  expenses: (Expense & { category: Category })[];
+  expenses: (Expense & { category: Category; tier?: ExpenseTier })[];
 }) {
   return (
     <div className="rounded-2xl border border-border bg-surface p-4 sm:p-5">

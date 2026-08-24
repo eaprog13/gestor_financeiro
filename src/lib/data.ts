@@ -1,8 +1,22 @@
 import { addMonths, startOfDay, startOfMonth, startOfToday } from "date-fns";
 import { obterContentor } from "@/composition/container";
+import { calcularReferenciasMagnitude, classificarMagnitude, type ExpenseTier } from "@/lib/metrics";
 
 export function getCategories() {
   return obterContentor().categorias.listar();
+}
+
+/** Junta a cada despesa o seu ExpenseTier (ver lib/metrics.ts) — usado por
+ * qualquer listagem que passe despesas a <ExpenseRow>. As referências (maior
+ * valor por dia/semana/mês/ano) vêm sempre do histórico COMPLETO, não só do
+ * subconjunto a apresentar, para uma despesa de fevereiro continuar a ser
+ * comparada ao resto de fevereiro mesmo que a página só mostre esse mês. */
+function comMagnitude<T extends { id: string; amount: number; date: Date; categoryId: string; note: string | null }>(
+  expenses: T[],
+  todasAsDespesas: { amount: number; date: Date; categoryId: string; note: string | null; id: string }[],
+): (T & { tier: ExpenseTier })[] {
+  const refs = calcularReferenciasMagnitude(todasAsDespesas);
+  return expenses.map((expense) => ({ ...expense, tier: classificarMagnitude(expense, refs) }));
 }
 
 export async function getDashboardData() {
@@ -11,11 +25,13 @@ export async function getDashboardData() {
   const nextMonthStart = addMonths(monthStart, 1);
   const todayStart = startOfToday();
 
-  const [categories, monthExpenses, recentExpenses] = await Promise.all([
+  const [categories, monthExpenses, recentExpensesRaw, todasAsDespesas] = await Promise.all([
     getCategories(),
     dependencias.despesas.listar({ from: monthStart, to: nextMonthStart }),
     dependencias.despesas.recentes(8),
+    dependencias.despesas.listar(),
   ]);
+  const recentExpenses = comMagnitude(recentExpensesRaw, todasAsDespesas);
 
   const monthTotal = monthExpenses.reduce((sum, e) => sum + e.amount, 0);
   const todayTotal = monthExpenses
@@ -68,11 +84,16 @@ export async function getHistory(filters: HistoryFilters) {
   if (filters.categoryId) dbFilters.categoryId = filters.categoryId;
   if (filters.search) dbFilters.search = filters.search;
 
-  const [expenses, categories] = await Promise.all([
+  const [expensesRaw, categories, todasAsDespesas] = await Promise.all([
     dependencias.despesas.listar(dbFilters),
     getCategories(),
+    // Sem filtros — as referências de magnitude (maior despesa do dia/semana/
+    // mês/ano) têm de vir sempre do histórico completo, mesmo quando a
+    // página está filtrada a um mês ou categoria específicos.
+    dependencias.despesas.listar(),
   ]);
-  const total = expenses.reduce((sum, e) => sum + e.amount, 0);
+  const expenses = comMagnitude(expensesRaw, todasAsDespesas);
+  const total = expensesRaw.reduce((sum, e) => sum + e.amount, 0);
 
   return { expenses, categories, total };
 }

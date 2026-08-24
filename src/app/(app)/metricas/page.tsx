@@ -123,7 +123,7 @@ export default async function MetricasPage() {
           </div>
 
           <div className="flex items-start gap-3">
-            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-surface-muted text-foreground-muted">
+            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-flag/15 text-flag">
               <Flame size={16} />
             </span>
             <div className="min-w-0">

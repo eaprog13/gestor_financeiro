@@ -7,6 +7,8 @@ import {
   eachDayOfInterval,
   eachMonthOfInterval,
   getDaysInMonth,
+  getISOWeek,
+  getISOWeekYear,
   startOfDay,
   startOfMonth,
   startOfWeek,
@@ -262,4 +264,88 @@ export function computeMetrics(expenses: RawExpense[], categories: Category[], n
     },
     highlights: { topCategory, biggestExpense },
   };
+}
+
+// ── Jogo de cores: "esta despesa é grande?" ─────────────────────────────
+// Separado de computeMetrics porque responde a uma pergunta diferente: não
+// é um KPI agregado do mês corrente, é uma classificação POR DESPESA (usada
+// em qualquer listagem — hoje, histórico de anos anteriores, etc.) que
+// compara cada valor ao maior valor do seu próprio dia/semana/mês/ano de
+// calendário. Como dia ⊆ semana ⊆ mês ⊆ ano, o maior valor de cada janela
+// cresce (nunca desce) à medida que a janela alarga — por isso basta
+// verificar da maior janela para a mais pequena e devolver a primeira que
+// bater certo.
+
+export type ExpenseTier = "record-year" | "record-month" | "record-week" | "record-day" | "normal";
+
+export type MagnitudeRefs = {
+  byDay: Map<string, number>;
+  byWeek: Map<string, number>;
+  byMonth: Map<string, number>;
+  byYear: Map<string, number>;
+  /** Piso mínimo para uma despesa sequer entrar no "jogo de cores": evita destacar a
+   * única despesa (banal) de um dia sem mais nenhuma para comparar. */
+  threshold: number;
+};
+
+function dayKey(date: Date) {
+  return startOfDay(date).getTime().toString();
+}
+
+function weekKey(date: Date) {
+  return `${getISOWeekYear(date)}-W${getISOWeek(date)}`;
+}
+
+function monthKey(date: Date) {
+  return `${date.getFullYear()}-${date.getMonth()}`;
+}
+
+function yearKey(date: Date) {
+  return String(date.getFullYear());
+}
+
+function maiorPorChave(expenses: RawExpense[], chave: (date: Date) => string) {
+  const totals = new Map<string, number>();
+  for (const expense of expenses) {
+    const key = chave(expense.date);
+    if (expense.amount > (totals.get(key) ?? 0)) totals.set(key, expense.amount);
+  }
+  return totals;
+}
+
+function mediana(valores: number[]) {
+  if (valores.length === 0) return 0;
+  const sorted = [...valores].sort((a, b) => a - b);
+  const mid = Math.floor(sorted.length / 2);
+  return sorted.length % 2 === 0 ? (sorted[mid - 1]! + sorted[mid]!) / 2 : sorted[mid]!;
+}
+
+/** Multiplicador sobre a mediana geral a partir do qual uma despesa é "grande" o
+ * suficiente para entrar no jogo de cores — mesmo sendo, tecnicamente, o maior
+ * valor do seu dia. */
+const MULTIPLICADOR_DESPESA_GRANDE = 1.5;
+
+export function calcularReferenciasMagnitude(expenses: RawExpense[]): MagnitudeRefs {
+  return {
+    byDay: maiorPorChave(expenses, dayKey),
+    byWeek: maiorPorChave(expenses, weekKey),
+    byMonth: maiorPorChave(expenses, monthKey),
+    byYear: maiorPorChave(expenses, yearKey),
+    threshold: mediana(expenses.map((expense) => expense.amount)) * MULTIPLICADOR_DESPESA_GRANDE,
+  };
+}
+
+/**
+ * Classifica uma despesa pelo maior nível (dia/semana/mês/ano) de que é o
+ * recorde — só a partir do momento em que também é "grande" (ver
+ * threshold). `refs` deve ter sido calculado a partir de uma lista que
+ * inclui esta própria despesa (ver calcularReferenciasMagnitude).
+ */
+export function classificarMagnitude(expense: RawExpense, refs: MagnitudeRefs): ExpenseTier {
+  if (refs.threshold <= 0 || expense.amount < refs.threshold) return "normal";
+  if (expense.amount >= (refs.byYear.get(yearKey(expense.date)) ?? 0)) return "record-year";
+  if (expense.amount >= (refs.byMonth.get(monthKey(expense.date)) ?? 0)) return "record-month";
+  if (expense.amount >= (refs.byWeek.get(weekKey(expense.date)) ?? 0)) return "record-week";
+  if (expense.amount >= (refs.byDay.get(dayKey(expense.date)) ?? 0)) return "record-day";
+  return "normal";
 }

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { computeMetrics, type RawExpense } from "@/lib/metrics";
+import { calcularReferenciasMagnitude, classificarMagnitude, computeMetrics, type RawExpense } from "@/lib/metrics";
 import type { Category } from "@/core/types";
 
 function category(over: Partial<Category> = {}): Category {
@@ -72,5 +72,54 @@ describe("computeMetrics", () => {
     const ids = metrics.monthly.movers.map((m) => m.category.id);
     expect(ids).toContain("cat-1");
     expect(ids).not.toContain("cat-2");
+  });
+});
+
+describe("classificarMagnitude", () => {
+  // Mesmo conjunto de despesas para todos os testes deste bloco:
+  // três pequenas (10€, mediana geral baixa) e três "grandes" espalhadas
+  // por dia/mês/ano diferentes, escalando em valor: 200 < 500 < 700.
+  const pequenas = [
+    expense({ id: "p1", amount: 10, date: new Date("2026-01-05T09:00:00") }),
+    expense({ id: "p2", amount: 10, date: new Date("2026-01-06T09:00:00") }),
+    expense({ id: "p3", amount: 10, date: new Date("2026-01-07T09:00:00") }),
+  ];
+  // e4 e e5: mesma semana ISO (terça e quarta-feira), mesmo mês (fevereiro).
+  const e4 = expense({ id: "e4", amount: 200, date: new Date("2026-02-10T09:00:00") });
+  const e5 = expense({ id: "e5", amount: 500, date: new Date("2026-02-11T09:00:00") });
+  const e6 = expense({ id: "e6", amount: 700, date: new Date("2026-11-01T09:00:00") });
+  const todas = [...pequenas, e4, e5, e6];
+
+  it("fica 'normal' quando o valor não chega a ser 'grande' (abaixo de 1.5x a mediana geral)", () => {
+    const refs = calcularReferenciasMagnitude(todas);
+    expect(classificarMagnitude(pequenas[0]!, refs)).toBe("normal");
+  });
+
+  it("'record-day': é o maior do seu dia, mas não da sua semana/mês (há um maior mais tarde na mesma semana)", () => {
+    const refs = calcularReferenciasMagnitude(todas);
+    expect(classificarMagnitude(e4, refs)).toBe("record-day");
+  });
+
+  it("'record-month': é o maior do seu mês (o que também implica ser o maior da sua semana), mas não do ano", () => {
+    const refs = calcularReferenciasMagnitude(todas);
+    expect(classificarMagnitude(e5, refs)).toBe("record-month");
+  });
+
+  it("'record-year': é o maior do ano inteiro — o nível mais alto de destaque", () => {
+    const refs = calcularReferenciasMagnitude(todas);
+    expect(classificarMagnitude(e6, refs)).toBe("record-year");
+  });
+
+  it("sem despesas (mediana 0), nunca classifica nada como grande", () => {
+    const refs = calcularReferenciasMagnitude([]);
+    expect(classificarMagnitude(expense({ id: "x", amount: 999 }), refs)).toBe("normal");
+  });
+
+  it("é sensível à própria lista: a mesma despesa muda de nível consoante o resto do histórico à volta", () => {
+    // e4 (200€) sozinho no seu mês (sem o e5 de 500€ a seguir) passa a ser
+    // o maior do MÊS, não só do dia — confirma que a classificação depende
+    // sempre do conjunto passado, não de um valor fixo.
+    const refsSemE5 = calcularReferenciasMagnitude([...pequenas, e4, e6]);
+    expect(classificarMagnitude(e4, refsSemE5)).toBe("record-month");
   });
 });
