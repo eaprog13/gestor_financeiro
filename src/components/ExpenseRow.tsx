@@ -16,6 +16,10 @@ import type { ExpenseTier } from "@/lib/metrics";
 // /preferencias. Quanto maior a janela de que é recorde (dia < semana <
 // mês < ano), mais forte a tinta e o peso do texto.
 const TIER_STYLE: Record<ExpenseTier, { label: string; wash: string; text: string; flame: string } | null> = {
+  // Mesma tinta --flag, mas sem fundo (só o texto/ícone) e a esmaecer — é um
+  // aviso mais brando que os "record-*" a seguir: ainda não bateu recorde
+  // nenhum, só está perto (≥70%) do recorde do mês (ver classificarMagnitude).
+  "near-record-month": { label: "Quase recorde do mês", wash: "", text: "text-flag/70", flame: "opacity-40" },
   "record-day": { label: "Maior do dia", wash: "bg-flag/5", text: "text-flag", flame: "opacity-60" },
   "record-week": { label: "Maior da semana", wash: "bg-flag/10", text: "text-flag font-medium", flame: "" },
   "record-month": { label: "Maior do mês", wash: "bg-flag/15", text: "text-flag font-semibold", flame: "" },

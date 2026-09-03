@@ -1,4 +1,4 @@
-import { addMonths, startOfDay, startOfMonth, startOfToday } from "date-fns";
+import { addMonths, addYears, startOfDay, startOfMonth, startOfToday, startOfYear } from "date-fns";
 import { obterContentor } from "@/composition/container";
 import { calcularReferenciasMagnitude, classificarMagnitude, type ExpenseTier } from "@/lib/metrics";
 
@@ -24,10 +24,15 @@ export async function getDashboardData() {
   const monthStart = startOfMonth(new Date());
   const nextMonthStart = addMonths(monthStart, 1);
   const todayStart = startOfToday();
+  // "Despesas por categoria" mostra o ano inteiro (1 jan–31 dez), não o mês
+  // — dá uma noção de gasto acumulado por categoria, não só do mês corrente.
+  const yearStart = startOfYear(new Date());
+  const nextYearStart = addYears(yearStart, 1);
 
-  const [categories, monthExpenses, recentExpensesRaw, todasAsDespesas] = await Promise.all([
+  const [categories, monthExpenses, yearExpenses, recentExpensesRaw, todasAsDespesas] = await Promise.all([
     getCategories(),
     dependencias.despesas.listar({ from: monthStart, to: nextMonthStart }),
+    dependencias.despesas.listar({ from: yearStart, to: nextYearStart }),
     dependencias.despesas.recentes(8),
     dependencias.despesas.listar(),
   ]);
@@ -39,12 +44,13 @@ export async function getDashboardData() {
     .reduce((sum, e) => sum + e.amount, 0);
 
   const totalsByCategory = new Map<string, number>();
-  for (const expense of monthExpenses) {
+  for (const expense of yearExpenses) {
     totalsByCategory.set(
       expense.categoryId,
       (totalsByCategory.get(expense.categoryId) ?? 0) + expense.amount,
     );
   }
+  const yearTotal = yearExpenses.reduce((sum, e) => sum + e.amount, 0);
 
   const breakdown = categories
     .map((category) => ({
@@ -59,6 +65,8 @@ export async function getDashboardData() {
     monthTotal,
     todayTotal,
     monthCount: monthExpenses.length,
+    yearTotal,
+    year: yearStart.getFullYear(),
     breakdown,
     recentExpenses,
   };
