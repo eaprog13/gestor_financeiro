@@ -1,4 +1,5 @@
 import { CategoryIcon } from "@/components/CategoryIcon";
+import { CategoryViewPicker } from "@/components/CategoryViewPicker";
 import { formatCurrency } from "@/lib/format";
 import type { Category } from "@/core/types";
 
@@ -6,21 +7,29 @@ const MAX_ROWS = 8;
 
 export function CategoryBreakdown({
   breakdown,
-  yearTotal,
-  year,
+  total,
+  label,
+  view,
+  monthOptions,
 }: {
   breakdown: { category: Category; total: number }[];
-  yearTotal: number;
-  year: number;
+  total: number;
+  /** "2026" (vista "year") ou "Agosto 2026" (vista "yyyy-MM") — já formatado. */
+  label: string;
+  view: string;
+  monthOptions: { value: string; label: string }[];
 }) {
-  if (breakdown.length === 0 || yearTotal <= 0) {
+  const isYear = view === "year";
+
+  if (breakdown.length === 0 || total <= 0) {
     return (
       <div className="rounded-2xl border border-border bg-surface p-4 sm:p-5">
-        <h2 className="mb-1 text-sm font-semibold text-foreground-muted">
-          Despesas por categoria · {year}
-        </h2>
+        <div className="mb-1 flex items-center justify-between gap-2">
+          <h2 className="text-sm font-semibold text-foreground-muted">Despesas por categoria · {label}</h2>
+          <CategoryViewPicker current={view} monthOptions={monthOptions} />
+        </div>
         <p className="py-6 text-center text-sm text-foreground-muted">
-          Sem despesas este ano para mostrar aqui.
+          Sem despesas {isYear ? "este ano" : "neste mês"} para mostrar aqui.
         </p>
       </div>
     );
@@ -53,12 +62,13 @@ export function CategoryBreakdown({
 
   return (
     <div className="rounded-2xl border border-border bg-surface p-4 sm:p-5">
-      <h2 className="mb-3 text-sm font-semibold text-foreground-muted">
-        Despesas por categoria · {year}
-      </h2>
+      <div className="mb-3 flex items-center justify-between gap-2">
+        <h2 className="text-sm font-semibold text-foreground-muted">Despesas por categoria · {label}</h2>
+        <CategoryViewPicker current={view} monthOptions={monthOptions} />
+      </div>
       <div className="flex flex-col gap-3">
         {rows.map((row) => {
-          const percent = yearTotal > 0 ? (row.total / yearTotal) * 100 : 0;
+          const percent = total > 0 ? (row.total / total) * 100 : 0;
           return (
             <div key={row.key} className="flex items-center gap-3">
               <CategoryIcon icon={row.icon} color={row.color} size={14} />

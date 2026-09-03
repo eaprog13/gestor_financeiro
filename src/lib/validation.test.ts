@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { categorySchema, expenseSchema, loginSchema, userSchema } from "@/lib/validation";
+import { categorySchema, categoryViewSchema, colorSchemeSchema, expenseSchema, loginSchema, userSchema } from "@/lib/validation";
 
 describe("expenseSchema", () => {
   it("aceita uma despesa válida", () => {
@@ -63,5 +63,30 @@ describe("userSchema", () => {
 describe("loginSchema", () => {
   it("rejeita email inválido", () => {
     expect(loginSchema.safeParse({ email: "não-é-email", password: "x" }).success).toBe(false);
+  });
+});
+
+describe("colorSchemeSchema", () => {
+  it("aceita system/light/dark", () => {
+    expect(colorSchemeSchema.safeParse({ colorScheme: "system" }).success).toBe(true);
+    expect(colorSchemeSchema.safeParse({ colorScheme: "light" }).success).toBe(true);
+    expect(colorSchemeSchema.safeParse({ colorScheme: "dark" }).success).toBe(true);
+  });
+
+  it("rejeita qualquer outro valor", () => {
+    expect(colorSchemeSchema.safeParse({ colorScheme: "azul" }).success).toBe(false);
+  });
+});
+
+describe("categoryViewSchema", () => {
+  it("aceita 'year' e um mês no formato yyyy-MM", () => {
+    expect(categoryViewSchema.safeParse({ view: "year" }).success).toBe(true);
+    expect(categoryViewSchema.safeParse({ view: "2026-08" }).success).toBe(true);
+  });
+
+  it("rejeita formatos inválidos", () => {
+    expect(categoryViewSchema.safeParse({ view: "2026" }).success).toBe(false);
+    expect(categoryViewSchema.safeParse({ view: "agosto" }).success).toBe(false);
+    expect(categoryViewSchema.safeParse({ view: "" }).success).toBe(false);
   });
 });
