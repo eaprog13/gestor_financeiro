@@ -25,8 +25,22 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   const modo = colorScheme === "system" ? undefined : colorScheme;
 
   return (
-    <div data-theme={tema.id} data-mode={modo} className="flex min-h-full flex-1 flex-col">
-      {/* Seletor "div[data-theme=...]" (specificity 0,0,1,1) para garantir
+    <div
+      data-theme={tema.id}
+      data-mode={modo}
+      className="flex min-h-screen flex-1 flex-col bg-background text-foreground"
+    >
+      {/* bg-background/text-foreground aqui — não só no <body> do layout
+          raiz — porque quando data-mode força "light"/"dark" contra o
+          prefers-color-scheme do sistema, as variáveis --background/
+          --foreground ficam diferentes NESTE div (ver globals.css,
+          div[data-mode]); sem pintar o fundo aqui, continuava a
+          aparecer o do <body> por trás (nunca sobrescrito, por estar
+          fora deste grupo de rotas) — texto escuro sobre fundo escuro
+          do body, ilegível. min-h-screen (não min-h-full): html/body
+          não têm height:100% definido, min-h-full ficava sem base para
+          garantir a altura toda do ecrã coberta.
+          Seletor "div[data-theme=...]" (specificity 0,0,1,1) para garantir
           que ganha ao ":root" de globals.css (0,0,1,0) mesmo se a ordem no
           documento alguma vez mudar — não depende de vir depois no HTML. */}
       <style>{`
