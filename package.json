@@ -40,5 +40,8 @@
     "typescript": "^5",
     "vitest": "^3.2.4"
   },
-  "allowScripts": {}
+  "allowScripts": {
+    "esbuild": true,
+    "unrs-resolver": true
+  }
 }
