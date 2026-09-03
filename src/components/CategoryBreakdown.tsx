@@ -6,19 +6,21 @@ const MAX_ROWS = 8;
 
 export function CategoryBreakdown({
   breakdown,
-  monthTotal,
+  yearTotal,
+  year,
 }: {
   breakdown: { category: Category; total: number }[];
-  monthTotal: number;
+  yearTotal: number;
+  year: number;
 }) {
-  if (breakdown.length === 0 || monthTotal <= 0) {
+  if (breakdown.length === 0 || yearTotal <= 0) {
     return (
       <div className="rounded-2xl border border-border bg-surface p-4 sm:p-5">
         <h2 className="mb-1 text-sm font-semibold text-foreground-muted">
-          Despesas por categoria
+          Despesas por categoria · {year}
         </h2>
         <p className="py-6 text-center text-sm text-foreground-muted">
-          Sem despesas este mês para mostrar aqui.
+          Sem despesas este ano para mostrar aqui.
         </p>
       </div>
     );
@@ -52,11 +54,11 @@ export function CategoryBreakdown({
   return (
     <div className="rounded-2xl border border-border bg-surface p-4 sm:p-5">
       <h2 className="mb-3 text-sm font-semibold text-foreground-muted">
-        Despesas por categoria
+        Despesas por categoria · {year}
       </h2>
       <div className="flex flex-col gap-3">
         {rows.map((row) => {
-          const percent = monthTotal > 0 ? (row.total / monthTotal) * 100 : 0;
+          const percent = yearTotal > 0 ? (row.total / yearTotal) * 100 : 0;
           return (
             <div key={row.key} className="flex items-center gap-3">
               <CategoryIcon icon={row.icon} color={row.color} size={14} />

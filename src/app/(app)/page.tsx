@@ -9,7 +9,7 @@ import { RecentExpenses } from "@/components/RecentExpenses";
 export const dynamic = "force-dynamic";
 
 export default async function Home() {
-  const { categories, monthTotal, todayTotal, monthCount, breakdown, recentExpenses } =
+  const { categories, monthTotal, todayTotal, monthCount, yearTotal, year, breakdown, recentExpenses } =
     await getDashboardData();
 
   return (
@@ -19,7 +19,7 @@ export default async function Home() {
         <QuickAddPanel categories={categories} />
       </div>
       <div className="animate-entrada" style={{ animationDelay: "260ms" }}>
-        <CategoryBreakdown breakdown={breakdown} monthTotal={monthTotal} />
+        <CategoryBreakdown breakdown={breakdown} yearTotal={yearTotal} year={year} />
       </div>
       <div className="animate-entrada" style={{ animationDelay: "340ms" }}>
         <RecentExpenses expenses={recentExpenses} />

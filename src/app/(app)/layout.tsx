@@ -31,7 +31,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         }
       `}</style>
       <Nav userName={session.name} />
-      <main className="mx-auto w-full max-w-3xl flex-1 px-4 pb-20 pt-6 sm:px-6 sm:pb-10">{children}</main>
+      <main className="mx-auto w-full max-w-3xl flex-1 px-4 py-6 sm:px-6 sm:py-10">{children}</main>
     </div>
   );
 }
