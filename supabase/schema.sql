@@ -16,20 +16,30 @@ create extension if not exists "pgcrypto";
 -- sempre pela Admin API, nunca signup público: app fechada, os membros da
 -- família são adicionados por quem já tem acesso (/settings/users).
 create table if not exists public.profiles (
-  id         uuid primary key references auth.users (id) on delete cascade,
-  email      text not null unique,
-  name       text not null,
+  id             uuid primary key references auth.users (id) on delete cascade,
+  email          text not null unique,
+  name           text not null,
   -- Cor de destaque da própria página (ver src/lib/theme.ts para as opções
   -- válidas) — preferência pessoal, não partilhada como o resto dos dados.
-  theme      text not null default 'green',
-  created_at timestamptz not null default now()
+  theme          text not null default 'green',
+  -- Claro/escuro/sistema (ver src/lib/colorScheme.ts) — por defeito segue o
+  -- sistema operativo (prefers-color-scheme), só grava aqui quando alguém
+  -- escolhe explicitamente ignorar isso.
+  color_scheme   text not null default 'system' check (color_scheme in ('light', 'dark', 'system')),
+  -- Vista por defeito de "Despesas por categoria" no dashboard: 'year' ou um
+  -- mês concreto 'yyyy-MM' (ver src/lib/data.ts, CategoryViewPicker) — o
+  -- formato do mês é validado em zod (src/lib/validation.ts), não aqui.
+  category_view  text not null default 'year',
+  created_at     timestamptz not null default now()
 );
 
 comment on table public.profiles is 'Dados complementares de cada membro da família com acesso à app.';
 
--- Idempotente: quem já tinha corrido este schema.sql antes de "theme"
--- existir só precisa de voltar a correr o ficheiro — não recria a tabela.
+-- Idempotente: quem já tinha corrido este schema.sql antes destas colunas
+-- existirem só precisa de voltar a correr o ficheiro — não recria a tabela.
 alter table public.profiles add column if not exists theme text not null default 'green';
+alter table public.profiles add column if not exists color_scheme text not null default 'system' check (color_scheme in ('light', 'dark', 'system'));
+alter table public.profiles add column if not exists category_view text not null default 'year';
 
 -- ── Categorias ──────────────────────────────────────────────────────────
 -- "sort_order" (não "order", palavra reservada em SQL) define a posição no

@@ -3,7 +3,15 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import type { RepositorioPerfil } from "@/core/ports/repositories";
 import type { Profile } from "@/core/types";
 
-type LinhaPerfil = { id: string; email: string; name: string; theme: string; created_at: string };
+type LinhaPerfil = {
+  id: string;
+  email: string;
+  name: string;
+  theme: string;
+  color_scheme: string;
+  category_view: string;
+  created_at: string;
+};
 
 function paraPerfil(linha: LinhaPerfil): Profile {
   return {
@@ -11,6 +19,8 @@ function paraPerfil(linha: LinhaPerfil): Profile {
     email: linha.email,
     name: linha.name,
     theme: linha.theme,
+    colorScheme: linha.color_scheme,
+    categoryView: linha.category_view,
     createdAt: new Date(linha.created_at),
   };
 }
@@ -55,6 +65,28 @@ export class RepositorioPerfilSupabase implements RepositorioPerfil {
       .select("*")
       .single();
     if (error || !data) throw new Error(`[profiles.atualizarTema] ${error?.message}`);
+    return paraPerfil(data);
+  }
+
+  async atualizarColorScheme(id: string, colorScheme: string): Promise<Profile> {
+    const { data, error } = await this.bd
+      .from("profiles")
+      .update({ color_scheme: colorScheme })
+      .eq("id", id)
+      .select("*")
+      .single();
+    if (error || !data) throw new Error(`[profiles.atualizarColorScheme] ${error?.message}`);
+    return paraPerfil(data);
+  }
+
+  async atualizarCategoryView(id: string, categoryView: string): Promise<Profile> {
+    const { data, error } = await this.bd
+      .from("profiles")
+      .update({ category_view: categoryView })
+      .eq("id", id)
+      .select("*")
+      .single();
+    if (error || !data) throw new Error(`[profiles.atualizarCategoryView] ${error?.message}`);
     return paraPerfil(data);
   }
 }

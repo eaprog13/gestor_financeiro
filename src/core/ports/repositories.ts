@@ -49,4 +49,6 @@ export interface RepositorioPerfil {
   obterPorEmail(email: string): Promise<Profile | null>;
   atualizar(id: string, dados: { name: string }): Promise<Profile>;
   atualizarTema(id: string, theme: string): Promise<Profile>;
+  atualizarColorScheme(id: string, colorScheme: string): Promise<Profile>;
+  atualizarCategoryView(id: string, categoryView: string): Promise<Profile>;
 }
