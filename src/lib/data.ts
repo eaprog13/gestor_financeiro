@@ -1,9 +1,24 @@
-import { addMonths, startOfDay, startOfMonth, startOfToday } from "date-fns";
+import { addMonths, addYears, startOfDay, startOfMonth, startOfToday, startOfYear } from "date-fns";
 import { obterContentor } from "@/composition/container";
 import { calcularReferenciasMagnitude, classificarMagnitude, type ExpenseTier } from "@/lib/metrics";
+import { formatMonthLabel } from "@/lib/format";
 
 export function getCategories() {
   return obterContentor().categorias.listar();
+}
+
+/** "year" ou "yyyy-MM" -> intervalo [from, to) + rótulo, para "Despesas por
+ * categoria" (ver CategoryViewPicker). Qualquer valor que não seja "year"
+ * nem bata com "yyyy-MM" cai para "year" — nunca deixa a página rebentar
+ * por causa de um query param manual/estragado. */
+function resolveCategoryView(view: string, now: Date = new Date()) {
+  const match = /^(\d{4})-(\d{2})$/.exec(view);
+  if (!match) {
+    const start = startOfYear(now);
+    return { view: "year", from: start, to: addYears(start, 1), label: String(start.getFullYear()) };
+  }
+  const start = new Date(Number(match[1]), Number(match[2]) - 1, 1);
+  return { view, from: start, to: addMonths(start, 1), label: formatMonthLabel(start) };
 }
 
 /** Junta a cada despesa o seu ExpenseTier (ver lib/metrics.ts) — usado por
@@ -19,15 +34,23 @@ function comMagnitude<T extends { id: string; amount: number; date: Date; catego
   return expenses.map((expense) => ({ ...expense, tier: classificarMagnitude(expense, refs) }));
 }
 
-export async function getDashboardData() {
+/**
+ * "view" resolve para o ano corrente por defeito ("year"), mas aceita um
+ * mês concreto ("yyyy-MM") — ver CategoryViewPicker e a preferência
+ * profiles.category_view. Só afeta "Despesas por categoria"; os cartões de
+ * resumo (SummaryCards) continuam sempre presos ao mês corrente.
+ */
+export async function getDashboardData(view: string = "year") {
   const dependencias = obterContentor();
   const monthStart = startOfMonth(new Date());
   const nextMonthStart = addMonths(monthStart, 1);
   const todayStart = startOfToday();
+  const { view: resolvedView, from: viewStart, to: viewEnd, label: viewLabel } = resolveCategoryView(view);
 
-  const [categories, monthExpenses, recentExpensesRaw, todasAsDespesas] = await Promise.all([
+  const [categories, monthExpenses, viewExpenses, recentExpensesRaw, todasAsDespesas] = await Promise.all([
     getCategories(),
     dependencias.despesas.listar({ from: monthStart, to: nextMonthStart }),
+    dependencias.despesas.listar({ from: viewStart, to: viewEnd }),
     dependencias.despesas.recentes(8),
     dependencias.despesas.listar(),
   ]);
@@ -39,12 +62,13 @@ export async function getDashboardData() {
     .reduce((sum, e) => sum + e.amount, 0);
 
   const totalsByCategory = new Map<string, number>();
-  for (const expense of monthExpenses) {
+  for (const expense of viewExpenses) {
     totalsByCategory.set(
       expense.categoryId,
       (totalsByCategory.get(expense.categoryId) ?? 0) + expense.amount,
     );
   }
+  const breakdownTotal = viewExpenses.reduce((sum, e) => sum + e.amount, 0);
 
   const breakdown = categories
     .map((category) => ({
@@ -60,6 +84,9 @@ export async function getDashboardData() {
     todayTotal,
     monthCount: monthExpenses.length,
     breakdown,
+    breakdownTotal,
+    breakdownLabel: viewLabel,
+    view: resolvedView,
     recentExpenses,
   };
 }

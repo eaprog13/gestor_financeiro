@@ -20,7 +20,7 @@ import {
 } from "date-fns";
 import { obterContentor } from "@/composition/container";
 import { getCategories } from "@/lib/data";
-import { formatMonthShort, formatShortDate } from "@/lib/format";
+import { formatCurrency, formatMonthShort, formatShortDate } from "@/lib/format";
 import type { Category } from "@/core/types";
 
 export type RawExpense = { id: string; amount: number; date: Date; categoryId: string; note: string | null };
@@ -94,6 +94,8 @@ export type MetricsData = {
   annual: {
     thisYear: number;
     vsLastYear: Delta;
+    /** Média dos anos anteriores completos — undefined sem histórico prévio (só há o ano corrente). */
+    averageAllTime?: number;
     series: SeriesPoint[];
   };
   yearOverYear: {
@@ -104,7 +106,19 @@ export type MetricsData = {
   highlights: {
     topCategory: { category: Category; total: number; share: number } | null;
     biggestExpense: { amount: number; date: Date; note: string | null; category: Category } | null;
+    /** Espelho de biggestExpense — a mais pequena despesa do mês. */
+    smallestExpense: { amount: number; date: Date; note: string | null; category: Category } | null;
+    /** Só preenchido quando este mês está visivelmente abaixo da média (ver LIMIAR_POUPANCA) — não é "sempre mostrar a diferença", é "assinalar quando vale a pena". */
+    savingsMonth: { amount: number; percent: number } | null;
   };
+};
+
+export type InsightTone = "positive" | "warning" | "neutral";
+
+export type Insight = {
+  id: string;
+  tone: InsightTone;
+  text: string;
 };
 
 export async function getMetricsData(): Promise<MetricsData> {
@@ -192,6 +206,14 @@ export function computeMetrics(expenses: RawExpense[], categories: Category[], n
     label: String(year),
     value: sumInRange(expenses, new Date(year, 0, 1), new Date(year + 1, 0, 1)),
   }));
+  // Média dos anos anteriores COMPLETOS — o ano corrente fica de fora por
+  // estar sempre a meio (mesmo padrão de average8w/average12m acima).
+  const priorYears = [...yearsWithData].filter((year) => year !== now.getFullYear());
+  const averageAllTimeYears =
+    priorYears.length > 0
+      ? priorYears.reduce((sum, year) => sum + sumInRange(expenses, new Date(year, 0, 1), new Date(year + 1, 0, 1)), 0) /
+        priorYears.length
+      : undefined;
 
   // ---- Ano a ano (mês a mês) ----
   const currentYear = now.getFullYear();
@@ -230,6 +252,28 @@ export function computeMetrics(expenses: RawExpense[], categories: Category[], n
       }
     : null;
 
+  const smallestExpenseRaw = monthExpenses.reduce<RawExpense | null>(
+    (min, expense) => (!min || expense.amount < min.amount ? expense : min),
+    null,
+  );
+  const smallestExpense = smallestExpenseRaw
+    ? {
+        amount: smallestExpenseRaw.amount,
+        date: smallestExpenseRaw.date,
+        note: smallestExpenseRaw.note,
+        category: categoryById.get(smallestExpenseRaw.categoryId)!,
+      }
+    : null;
+
+  // "Mês em poupança": só assinala quando a diferença é grande o suficiente
+  // para ser um sinal, não ruído — mês a mês varia sempre um pouco.
+  const LIMIAR_POUPANCA = 10; // pontos percentuais abaixo da média
+  const savingsPercent = average12m > 0 ? ((average12m - thisMonth) / average12m) * 100 : 0;
+  const savingsMonth =
+    average12m > 0 && savingsPercent >= LIMIAR_POUPANCA
+      ? { amount: average12m - thisMonth, percent: savingsPercent }
+      : null;
+
   return {
     daily: {
       today,
@@ -255,6 +299,7 @@ export function computeMetrics(expenses: RawExpense[], categories: Category[], n
     annual: {
       thisYear,
       vsLastYear: delta(thisYear, lastYear),
+      averageAllTime: averageAllTimeYears,
       series: annualSeries,
     },
     yearOverYear: {
@@ -262,8 +307,107 @@ export function computeMetrics(expenses: RawExpense[], categories: Category[], n
       previousYearLabel: String(previousYear),
       series: yearOverYearSeries,
     },
-    highlights: { topCategory, biggestExpense },
+    highlights: { topCategory, biggestExpense, smallestExpense, savingsMonth },
   };
+}
+
+// ── Conclusões ───────────────────────────────────────────────────────────
+// Traduz os números já calculados acima em frases concretas — o objetivo não
+// é repetir um KPI ("este mês: 400€"), é apontar o PORQUÊ ou o E AGORA
+// ("ao ritmo atual vais fechar 20% acima da média"). Pura função de
+// MetricsData → Insight[]: nada aqui volta a olhar para despesas em bruto,
+// só combina o que computeMetrics já produziu.
+
+const LIMIAR_PROJECAO = 15; // % de desvio vs. média para valer a pena avisar
+const LIMIAR_QUOTA_CATEGORIA = 40; // % do mês numa só categoria
+const LIMIAR_MOVER = 25; // % de subida/descida vs. mês passado
+
+export function computeInsights(metrics: MetricsData): Insight[] {
+  const candidatos: (Insight & { magnitude: number })[] = [];
+  const { monthly, annual, highlights } = metrics;
+
+  if (monthly.average12m > 0) {
+    const desvio = ((monthly.projected - monthly.average12m) / monthly.average12m) * 100;
+    if (desvio >= LIMIAR_PROJECAO) {
+      candidatos.push({
+        id: "projecao-alta",
+        tone: "warning",
+        magnitude: desvio,
+        text: `Ao ritmo atual, vais fechar o mês em ${formatCurrency(monthly.projected)} — ${formatPercentAbs(desvio)} acima da tua média dos últimos 12 meses.`,
+      });
+    } else if (desvio <= -LIMIAR_PROJECAO) {
+      candidatos.push({
+        id: "projecao-baixa",
+        tone: "positive",
+        magnitude: Math.abs(desvio),
+        text: `Ao ritmo atual, vais fechar o mês em ${formatCurrency(monthly.projected)} — ${formatPercentAbs(Math.abs(desvio))} abaixo da tua média dos últimos 12 meses.`,
+      });
+    }
+  }
+
+  if (highlights.topCategory && highlights.topCategory.share >= LIMIAR_QUOTA_CATEGORIA) {
+    candidatos.push({
+      id: "quota-categoria",
+      tone: "neutral",
+      magnitude: highlights.topCategory.share,
+      text: `"${highlights.topCategory.category.name}" já representa ${highlights.topCategory.share.toFixed(0)}% dos gastos deste mês — a maior fatia, de longe.`,
+    });
+  }
+
+  const maiorSubida = monthly.movers[0];
+  if (maiorSubida && maiorSubida.diff > 0 && maiorSubida.percent !== null && maiorSubida.percent >= LIMIAR_MOVER) {
+    candidatos.push({
+      id: "maior-subida",
+      tone: "warning",
+      magnitude: maiorSubida.percent,
+      text: `"${maiorSubida.category.name}" subiu ${formatPercentAbs(maiorSubida.percent)} face ao mês passado (+${formatCurrency(maiorSubida.diff)}).`,
+    });
+  }
+
+  const maiorDescida = [...monthly.movers].sort((a, b) => a.diff - b.diff)[0];
+  if (
+    maiorDescida &&
+    maiorDescida.diff < 0 &&
+    maiorDescida.percent !== null &&
+    maiorDescida.percent <= -LIMIAR_MOVER
+  ) {
+    candidatos.push({
+      id: "maior-descida",
+      tone: "positive",
+      magnitude: Math.abs(maiorDescida.percent),
+      text: `Reduziste "${maiorDescida.category.name}" em ${formatPercentAbs(Math.abs(maiorDescida.percent))} face ao mês passado (${formatCurrency(maiorDescida.diff)}) — bom trabalho.`,
+    });
+  }
+
+  if (highlights.savingsMonth) {
+    candidatos.push({
+      id: "mes-poupanca",
+      tone: "positive",
+      magnitude: highlights.savingsMonth.percent,
+      text: `Este mês está ${formatPercentAbs(highlights.savingsMonth.percent)} abaixo da tua média habitual — uma poupança de ${formatCurrency(highlights.savingsMonth.amount)}.`,
+    });
+  }
+
+  if (annual.averageAllTime !== undefined && annual.averageAllTime > 0) {
+    const desvioAnual = ((annual.thisYear - annual.averageAllTime) / annual.averageAllTime) * 100;
+    if (Math.abs(desvioAnual) >= LIMIAR_PROJECAO) {
+      candidatos.push({
+        id: "ano-vs-media",
+        tone: desvioAnual > 0 ? "warning" : "positive",
+        magnitude: Math.abs(desvioAnual),
+        text: `Este ano já vais em ${formatCurrency(annual.thisYear)} — ${formatPercentAbs(Math.abs(desvioAnual))} ${desvioAnual > 0 ? "acima" : "abaixo"} da tua média anual.`,
+      });
+    }
+  }
+
+  return candidatos
+    .sort((a, b) => b.magnitude - a.magnitude)
+    .slice(0, 4)
+    .map((candidato) => ({ id: candidato.id, tone: candidato.tone, text: candidato.text }));
+}
+
+function formatPercentAbs(value: number) {
+  return `${Math.abs(value).toFixed(0)}%`;
 }
 
 // ── Jogo de cores: "esta despesa é grande?" ─────────────────────────────
@@ -276,7 +420,13 @@ export function computeMetrics(expenses: RawExpense[], categories: Category[], n
 // verificar da maior janela para a mais pequena e devolver a primeira que
 // bater certo.
 
-export type ExpenseTier = "record-year" | "record-month" | "record-week" | "record-day" | "normal";
+export type ExpenseTier =
+  | "record-year"
+  | "record-month"
+  | "record-week"
+  | "record-day"
+  | "near-record-month"
+  | "normal";
 
 export type MagnitudeRefs = {
   byDay: Map<string, number>;
@@ -335,11 +485,19 @@ export function calcularReferenciasMagnitude(expenses: RawExpense[]): MagnitudeR
   };
 }
 
+/** A partir de que fração do recorde do mês uma despesa (que não É o
+ * recorde) já vale a pena assinalar como "a caminho de o ser". */
+const LIMIAR_CANDIDATO_RECORDE = 0.7;
+
 /**
  * Classifica uma despesa pelo maior nível (dia/semana/mês/ano) de que é o
  * recorde — só a partir do momento em que também é "grande" (ver
  * threshold). `refs` deve ter sido calculado a partir de uma lista que
  * inclui esta própria despesa (ver calcularReferenciasMagnitude).
+ *
+ * "near-record-month": não bate o recorde de nenhuma janela, mas já vai em
+ * ≥70% do recorde do MÊS — um aviso mais suave de "está quase lá", pedido
+ * como par do "maior do mês" (que assinala o próprio recorde).
  */
 export function classificarMagnitude(expense: RawExpense, refs: MagnitudeRefs): ExpenseTier {
   if (refs.threshold <= 0 || expense.amount < refs.threshold) return "normal";
@@ -347,5 +505,7 @@ export function classificarMagnitude(expense: RawExpense, refs: MagnitudeRefs): 
   if (expense.amount >= (refs.byMonth.get(monthKey(expense.date)) ?? 0)) return "record-month";
   if (expense.amount >= (refs.byWeek.get(weekKey(expense.date)) ?? 0)) return "record-week";
   if (expense.amount >= (refs.byDay.get(dayKey(expense.date)) ?? 0)) return "record-day";
+  const recordeMes = refs.byMonth.get(monthKey(expense.date)) ?? 0;
+  if (recordeMes > 0 && expense.amount >= recordeMes * LIMIAR_CANDIDATO_RECORDE) return "near-record-month";
   return "normal";
 }

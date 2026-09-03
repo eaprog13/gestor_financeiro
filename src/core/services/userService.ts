@@ -19,6 +19,14 @@ export async function atualizarTema(dependencias: Dependencias, id: string, them
   return dependencias.perfis.atualizarTema(id, theme);
 }
 
+export async function atualizarColorScheme(dependencias: Dependencias, id: string, colorScheme: string) {
+  return dependencias.perfis.atualizarColorScheme(id, colorScheme);
+}
+
+export async function atualizarCategoryView(dependencias: Dependencias, id: string, categoryView: string) {
+  return dependencias.perfis.atualizarCategoryView(id, categoryView);
+}
+
 export async function atualizarUtilizador(dependencias: Dependencias, id: string, dados: { name: string }) {
   // Duas escritas — public.profiles (mostrado em /settings/users) e
   // user_metadata (fonte do nome na sessão, ver core/ports/identity.ts) —

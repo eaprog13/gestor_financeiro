@@ -5,8 +5,9 @@ import { redirect } from "next/navigation";
 import { obterContentor } from "@/composition/container";
 import { atualizarCategoria, criarCategoria, reordenarCategorias, removerCategoria } from "@/core/services/categoryService";
 import { criarDespesa, removerDespesa } from "@/core/services/expenseService";
+import { atualizarCategoryView } from "@/core/services/userService";
 import { requireSession, destroySession } from "@/lib/auth/session";
-import { categorySchema, expenseSchema } from "@/lib/validation";
+import { categorySchema, categoryViewSchema, expenseSchema } from "@/lib/validation";
 import { formatCurrency } from "@/lib/format";
 
 function revalidateAll() {
@@ -153,5 +154,22 @@ export async function deleteCategory(
   }
 
   revalidateAll();
+  return { ok: true };
+}
+
+/**
+ * Guarda a vista escolhida em "Despesas por categoria" (dashboard, ver
+ * CategoryViewPicker) como novo valor por defeito — "best effort": a troca
+ * de vista em si já aconteceu por navegação (?view=...), isto só faz o
+ * dashboard lembrar-se da escolha na próxima visita.
+ */
+export async function updateCategoryView(view: string): Promise<{ ok: boolean; message?: string }> {
+  const session = await requireSession();
+  const parsed = categoryViewSchema.safeParse({ view });
+  if (!parsed.success) {
+    return { ok: false, message: parsed.error.issues[0]?.message ?? "Vista inválida." };
+  }
+
+  await atualizarCategoryView(obterContentor(), session.sub, parsed.data.view);
   return { ok: true };
 }

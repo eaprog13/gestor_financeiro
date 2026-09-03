@@ -2,9 +2,9 @@
 
 import { revalidatePath } from "next/cache";
 import { obterContentor } from "@/composition/container";
-import { atualizarTema } from "@/core/services/userService";
+import { atualizarColorScheme, atualizarTema } from "@/core/services/userService";
 import { requireSession } from "@/lib/auth/session";
-import { themeSchema } from "@/lib/validation";
+import { colorSchemeSchema, themeSchema } from "@/lib/validation";
 
 export type ActionState = { status: "idle" | "error" | "success"; message?: string };
 
@@ -27,6 +27,21 @@ export async function updateTheme(_prevState: ActionState, formData: FormData): 
   // páginas específicas é mais explícito sobre o que realmente depende do
   // tema (todas, por causa do Nav) e consistente com revalidateAll() em
   // src/app/actions.ts.
+  revalidatePath("/", "layout");
+
+  return { status: "success", message: "Aparência atualizada." };
+}
+
+/** Claro/escuro/sistema — mesma forma que updateTheme, ver ColorSchemePicker. */
+export async function updateColorScheme(_prevState: ActionState, formData: FormData): Promise<ActionState> {
+  const session = await requireSession();
+
+  const parsed = colorSchemeSchema.safeParse({ colorScheme: formData.get("colorScheme") });
+  if (!parsed.success) {
+    return { status: "error", message: parsed.error.issues[0]?.message ?? "Dados inválidos." };
+  }
+
+  await atualizarColorScheme(obterContentor(), session.sub, parsed.data.colorScheme);
   revalidatePath("/", "layout");
 
   return { status: "success", message: "Aparência atualizada." };

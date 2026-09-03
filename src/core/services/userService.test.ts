@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { atualizarTema, criarUtilizador, atualizarUtilizador } from "@/core/services/userService";
+import {
+  atualizarCategoryView,
+  atualizarColorScheme,
+  atualizarTema,
+  criarUtilizador,
+  atualizarUtilizador,
+} from "@/core/services/userService";
 import type { Dependencias } from "@/core/deps";
 import type { Profile } from "@/core/types";
 
@@ -24,6 +30,18 @@ function contentorFalso(perfisIniciais: Profile[] = []) {
         perfil.theme = theme;
         return perfil;
       },
+      atualizarColorScheme: async (id, colorScheme) => {
+        const perfil = perfis.find((p) => p.id === id);
+        if (!perfil) throw new Error("Perfil não encontrado.");
+        perfil.colorScheme = colorScheme;
+        return perfil;
+      },
+      atualizarCategoryView: async (id, categoryView) => {
+        const perfil = perfis.find((p) => p.id === id);
+        if (!perfil) throw new Error("Perfil não encontrado.");
+        perfil.categoryView = categoryView;
+        return perfil;
+      },
     },
     identidade: {
       criarUtilizador: async (dados) => {
@@ -32,6 +50,8 @@ function contentorFalso(perfisIniciais: Profile[] = []) {
           email: dados.email,
           name: dados.name,
           theme: "green",
+          colorScheme: "system",
+          categoryView: "year",
           createdAt: new Date(),
         };
         perfis.push(perfil);
@@ -59,7 +79,15 @@ describe("criarUtilizador", () => {
   });
 
   it("recusa email já em uso, sem chamar a Admin API", async () => {
-    const existente: Profile = { id: "id-1", email: "ana@x.com", name: "Ana", theme: "green", createdAt: new Date() };
+    const existente: Profile = {
+      id: "id-1",
+      email: "ana@x.com",
+      name: "Ana",
+      theme: "green",
+      colorScheme: "system",
+      categoryView: "year",
+      createdAt: new Date(),
+    };
     const { dependencias } = contentorFalso([existente]);
 
     const resultado = await criarUtilizador(dependencias, { name: "Ana 2", email: "ana@x.com", password: "12345678" });
@@ -70,7 +98,15 @@ describe("criarUtilizador", () => {
 
 describe("atualizarUtilizador", () => {
   it("atualiza o nome em profiles e em user_metadata (identidade)", async () => {
-    const existente: Profile = { id: "id-1", email: "ana@x.com", name: "Ana", theme: "green", createdAt: new Date() };
+    const existente: Profile = {
+      id: "id-1",
+      email: "ana@x.com",
+      name: "Ana",
+      theme: "green",
+      colorScheme: "system",
+      categoryView: "year",
+      createdAt: new Date(),
+    };
     const { dependencias, nomesAtualizadosNaIdentidade } = contentorFalso([existente]);
 
     const perfil = await atualizarUtilizador(dependencias, "id-1", { name: "Ana Maria" });
@@ -81,11 +117,57 @@ describe("atualizarUtilizador", () => {
 
 describe("atualizarTema", () => {
   it("atualiza só o tema, sem tocar no resto do perfil", async () => {
-    const existente: Profile = { id: "id-1", email: "ana@x.com", name: "Ana", theme: "green", createdAt: new Date() };
+    const existente: Profile = {
+      id: "id-1",
+      email: "ana@x.com",
+      name: "Ana",
+      theme: "green",
+      colorScheme: "system",
+      categoryView: "year",
+      createdAt: new Date(),
+    };
     const { dependencias } = contentorFalso([existente]);
 
     const perfil = await atualizarTema(dependencias, "id-1", "blue");
     expect(perfil.theme).toBe("blue");
     expect(perfil.name).toBe("Ana");
+  });
+});
+
+describe("atualizarColorScheme", () => {
+  it("atualiza só o modo de cor, sem tocar no resto do perfil", async () => {
+    const existente: Profile = {
+      id: "id-1",
+      email: "ana@x.com",
+      name: "Ana",
+      theme: "green",
+      colorScheme: "system",
+      categoryView: "year",
+      createdAt: new Date(),
+    };
+    const { dependencias } = contentorFalso([existente]);
+
+    const perfil = await atualizarColorScheme(dependencias, "id-1", "dark");
+    expect(perfil.colorScheme).toBe("dark");
+    expect(perfil.theme).toBe("green");
+  });
+});
+
+describe("atualizarCategoryView", () => {
+  it("atualiza só a vista de categorias, sem tocar no resto do perfil", async () => {
+    const existente: Profile = {
+      id: "id-1",
+      email: "ana@x.com",
+      name: "Ana",
+      theme: "green",
+      colorScheme: "system",
+      categoryView: "year",
+      createdAt: new Date(),
+    };
+    const { dependencias } = contentorFalso([existente]);
+
+    const perfil = await atualizarCategoryView(dependencias, "id-1", "2026-08");
+    expect(perfil.categoryView).toBe("2026-08");
+    expect(perfil.theme).toBe("green");
   });
 });

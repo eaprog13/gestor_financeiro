@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { ICON_MAP } from "@/lib/icons";
 import { THEME_OPTIONS } from "@/lib/theme";
+import { COLOR_SCHEME_OPTIONS } from "@/lib/colorScheme";
 
 export const expenseSchema = z.object({
   categoryId: z.string().min(1, "Escolhe uma categoria."),
@@ -33,6 +34,19 @@ export const updateUserSchema = z.object({
 
 export const themeSchema = z.object({
   theme: z.enum(THEME_OPTIONS.map((t) => t.id) as [string, ...string[]], { error: "Tema inválido." }),
+});
+
+export const colorSchemeSchema = z.object({
+  colorScheme: z.enum(COLOR_SCHEME_OPTIONS.map((o) => o.id) as [string, ...string[]], {
+    error: "Aparência inválida.",
+  }),
+});
+
+/** "year" ou "yyyy-MM" — ver CategoryViewPicker/getDashboardData. */
+export const categoryViewSchema = z.object({
+  view: z
+    .string()
+    .refine((v) => v === "year" || /^\d{4}-\d{2}$/.test(v), { error: "Vista inválida." }),
 });
 
 export const newPasswordSchema = z

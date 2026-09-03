@@ -20,7 +20,13 @@ export function LogoMark({ size = 28, className }: { size?: number; className?: 
 export function Logo({ size = 28, wordmark = true }: { size?: number; wordmark?: boolean }) {
   return (
     <span className="inline-flex min-w-0 items-center gap-2">
-      <LogoMark size={size} />
+      {/* "perspective" tem de estar num ANTEPASSADO do elemento com
+          rotateY (ver .animate-moeda em globals.css) para o giro ganhar
+          profundidade 3D real — sem isto, rotateY(180deg) só "espelhava"
+          a moeda, sem nunca dar a sensação de estar a rodar no espaço. */}
+      <span style={{ perspective: 240 }}>
+        <LogoMark size={size} className="animate-moeda" />
+      </span>
       {wordmark && <span className="hidden truncate font-semibold tracking-tight sm:inline">Gastos</span>}
     </span>
   );

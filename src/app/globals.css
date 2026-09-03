@@ -37,6 +37,8 @@
   --font-mono: var(--font-geist-mono);
 }
 
+/* Escuro: por defeito segue o sistema operativo (prefers-color-scheme) —
+ * regra incondicional em :root (<html>), como sempre foi. */
 @media (prefers-color-scheme: dark) {
   :root {
     --background: #0d0e11;
@@ -50,6 +52,38 @@
     --danger: #f87171;
     --flag: #facc15;
   }
+}
+
+/* Modo de cor explícito (ver /preferencias, ColorSchemePicker): o
+ * "data-mode" fica no <div> que envolve o grupo (app) — ver
+ * (app)/layout.tsx — nunca em :root, por isso estas regras não competem
+ * por especificidade com as de cima; ganham por serem declaradas
+ * diretamente nesse elemento, que passa a ter o SEU PRÓPRIO valor da
+ * variável em vez de herdar de :root, independentemente do
+ * prefers-color-scheme do sistema. --accent fica de fora (tem lógica
+ * própria por tema, na <style> inline do layout). */
+div[data-mode="light"] {
+  --background: #f4f5f7;
+  --surface: #ffffff;
+  --surface-muted: #f0f1f4;
+  --border: #e4e6eb;
+  --foreground: #17181c;
+  --foreground-muted: #6b7280;
+  --accent-foreground: #ffffff;
+  --danger: #dc2626;
+  --flag: #a16207;
+}
+
+div[data-mode="dark"] {
+  --background: #0d0e11;
+  --surface: #17181c;
+  --surface-muted: #1e2025;
+  --border: #2a2c33;
+  --foreground: #f2f3f5;
+  --foreground-muted: #9aa0ab;
+  --accent-foreground: #05130a;
+  --danger: #f87171;
+  --flag: #facc15;
 }
 
 * {
@@ -133,11 +167,53 @@ input[type="number"]::-webkit-inner-spin-button {
   animation: crescer-barra-vertical 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
+/* Logótipo — a "moeda" (ver Logo.tsx) entra a rodar sobre si mesma, como
+ * uma moeda real a cair de lado. 3D genuíno (perspective + rotateY), mas
+ * ainda só opacity/transform (GPU) e one-shot — mesma política de sempre,
+ * só a mexer num eixo a mais. Só à entrada (montagem do Nav, uma vez por
+ * sessão de navegação — o layout não remonta entre páginas). */
+@keyframes moeda-flip {
+  from {
+    opacity: 0;
+    transform: rotateY(180deg);
+  }
+  to {
+    opacity: 1;
+    transform: rotateY(0deg);
+  }
+}
+
+@utility animate-moeda {
+  animation: moeda-flip 0.8s cubic-bezier(0.16, 1, 0.3, 1) both;
+  transform-style: preserve-3d;
+  backface-visibility: hidden;
+}
+
+/* "Selo" — ícone de destaque a aparecer com um leve ressalto (scale com
+ * overshoot). Usada nos cartões de "Destaques do mês" nas Métricas — mesma
+ * política das anteriores: opacity/transform, one-shot, GPU. */
+@keyframes selo-pop {
+  from {
+    opacity: 0;
+    transform: scale(0.6);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@utility animate-selo {
+  animation: selo-pop 0.45s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
 /* Quem pede menos movimento ao sistema operativo, não recebe animações. */
 @media (prefers-reduced-motion: reduce) {
   .animate-entrada,
   .barra-cresce,
-  .barra-cresce-vertical {
+  .barra-cresce-vertical,
+  .animate-moeda,
+  .animate-selo {
     animation: none;
   }
   * {

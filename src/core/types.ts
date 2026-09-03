@@ -28,5 +28,9 @@ export type Profile = {
   name: string;
   /** Cor de destaque da própria página — ver ThemeId em src/lib/theme.ts. */
   theme: string;
+  /** "light" | "dark" | "system" — ver src/lib/colorScheme.ts. */
+  colorScheme: string;
+  /** "year" ou "yyyy-MM" — vista por defeito de "Despesas por categoria". */
+  categoryView: string;
   createdAt: Date;
 };
