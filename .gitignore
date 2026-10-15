@@ -33,7 +33,7 @@ yarn-error.log*
 # env files (contêm as chaves do Supabase — nunca commitar)
 .env*
 !.env.example
-
+.env.local
 # vercel
 .vercel
 
