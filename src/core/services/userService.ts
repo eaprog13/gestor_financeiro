@@ -1,20 +1,5 @@
 import type { Dependencias } from "@/core/deps";
 
-export type ResultadoCriarUtilizador = { ok: true } | { ok: false; message: string };
-
-export async function criarUtilizador(
-  dependencias: Dependencias,
-  dados: { name: string; email: string; password: string }
-): Promise<ResultadoCriarUtilizador> {
-  const existing = await dependencias.perfis.obterPorEmail(dados.email);
-  if (existing) {
-    return { ok: false, message: "Já existe um utilizador com este email." };
-  }
-
-  await dependencias.identidade.criarUtilizador(dados);
-  return { ok: true };
-}
-
 export async function atualizarTema(dependencias: Dependencias, id: string, theme: string) {
   return dependencias.perfis.atualizarTema(id, theme);
 }

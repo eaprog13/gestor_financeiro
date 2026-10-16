@@ -1,15 +1,9 @@
-// Port para gestão de identidade (criação de utilizadores). Separado dos
+// Port para gestão de identidade (nome da conta). As contas criam-se só no
+// painel do Supabase — a app não cria contas. Separado dos
 // repositórios porque não é dados de negócio — é uma operação sobre o
 // serviço de autenticação (Supabase Auth hoje).
 
-export type DadosCriacaoUtilizador = {
-  email: string;
-  password: string;
-  name: string;
-};
-
 export interface FornecedorGestaoIdentidade {
-  criarUtilizador(dados: DadosCriacaoUtilizador): Promise<{ id: string }>;
   /**
    * Atualiza o "name" em user_metadata (auth.users) — a mesma fonte que
    * src/lib/auth/session.ts lê para mostrar o nome na sessão. Sem isto,

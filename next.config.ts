@@ -7,6 +7,9 @@ const nextConfig: NextConfig = {
   turbopack: {
     root: path.resolve(__dirname),
   },
+  // Sem isto, o Next manda "X-Powered-By: Next.js" em toda a resposta — não
+  // há razão para anunciar a framework a quem estiver a sondar o site.
+  poweredByHeader: false,
 };
 
 export default nextConfig;

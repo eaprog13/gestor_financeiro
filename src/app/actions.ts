@@ -7,7 +7,7 @@ import { atualizarCategoria, criarCategoria, reordenarCategorias, removerCategor
 import { criarDespesa, removerDespesa } from "@/core/services/expenseService";
 import { atualizarCategoryView } from "@/core/services/userService";
 import { requireSession, destroySession } from "@/lib/auth/session";
-import { categorySchema, categoryViewSchema, expenseSchema } from "@/lib/validation";
+import { categorySchema, categoryViewSchema, expenseSchema, idSchema } from "@/lib/validation";
 import { formatCurrency } from "@/lib/format";
 
 function revalidateAll() {
@@ -67,6 +67,8 @@ export async function createExpense(
 
 export async function deleteExpense(id: string) {
   await requireSession();
+  // os argumentos de uma Server Action vêm do browser: só UUIDs chegam à base de dados
+  if (!idSchema.safeParse(id).success) return;
   await removerDespesa(obterContentor(), id);
   revalidateAll();
 }
@@ -110,6 +112,9 @@ export async function updateCategory(
   formData: FormData,
 ): Promise<CategoryFormState> {
   await requireSession();
+  if (!idSchema.safeParse(id).success) {
+    return { status: "error", message: "Categoria inválida." };
+  }
   const parsed = categorySchema.safeParse({
     name: formData.get("name"),
     icon: formData.get("icon"),
@@ -135,6 +140,9 @@ export async function updateCategory(
 
 export async function reorderCategories(ids: string[]): Promise<{ ok: boolean; message?: string }> {
   await requireSession();
+  if (!Array.isArray(ids) || ids.length > 500 || !ids.every((id) => idSchema.safeParse(id).success)) {
+    return { ok: false, message: "Categorias inválidas." };
+  }
   const resultado = await reordenarCategorias(obterContentor(), ids);
   if (!resultado.ok) {
     return { ok: false, message: resultado.message };
@@ -148,6 +156,9 @@ export async function deleteCategory(
   id: string,
 ): Promise<{ ok: boolean; message?: string }> {
   await requireSession();
+  if (!idSchema.safeParse(id).success) {
+    return { ok: false, message: "Categoria inválida." };
+  }
   const resultado = await removerCategoria(obterContentor(), id);
   if (!resultado.ok) {
     return { ok: false, message: resultado.message };

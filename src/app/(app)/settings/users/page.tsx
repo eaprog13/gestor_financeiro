@@ -1,5 +1,4 @@
 import { getUsers } from "@/lib/data";
-import { UserForm } from "@/components/UserForm";
 import { EditUserForm } from "@/components/EditUserForm";
 
 export const dynamic = "force-dynamic";
@@ -11,14 +10,9 @@ export default async function UsersPage() {
     <div className="flex flex-col gap-6">
       <h1 className="text-lg font-semibold">Utilizadores</h1>
       <p className="max-w-xl text-sm text-foreground-muted">
-        Todos os utilizadores partilham os mesmos dados — não há despesas separadas por pessoa. Usa isto
-        só para dar acesso a mais membros da família.
+        Todos os utilizadores partilham os mesmos dados — não há despesas separadas por pessoa. As contas são criadas só no painel do Supabase (Authentication → Users) —
+        a app não cria contas.
       </p>
-
-      <section className="rounded-2xl border border-border bg-surface p-4 sm:p-5">
-        <h2 className="mb-4 text-sm font-semibold">Adicionar utilizador</h2>
-        <UserForm />
-      </section>
 
       <section className="rounded-2xl border border-border bg-surface p-4 sm:p-5">
         <h2 className="mb-4 text-sm font-semibold">Utilizadores existentes</h2>

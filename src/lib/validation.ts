@@ -4,7 +4,7 @@ import { THEME_OPTIONS } from "@/lib/theme";
 import { COLOR_SCHEME_OPTIONS } from "@/lib/colorScheme";
 
 export const expenseSchema = z.object({
-  categoryId: z.string().min(1, "Escolhe uma categoria."),
+  categoryId: z.uuid({ error: "Escolhe uma categoria." }),
   amount: z.coerce
     .number({ error: "Indica um valor válido." })
     .positive("O valor tem de ser maior que zero.")
@@ -22,10 +22,23 @@ export const loginSchema = z.object({
   password: z.string().min(1, "Indica a password."),
 });
 
+// Política de password igual à do gestor_investimento (era só min(8), sem
+// exigir variedade de caracteres): esta app guarda as finanças da família.
+export const passwordSchema = z
+  .string()
+  .min(10, "A password tem de ter pelo menos 10 caracteres.")
+  .max(128)
+  .regex(/[A-Z]/, "Deve incluir pelo menos uma letra maiúscula.")
+  .regex(/[a-z]/, "Deve incluir pelo menos uma letra minúscula.")
+  .regex(/[0-9]/, "Deve incluir pelo menos um número.");
+
+/** Ids que vêm do browser (Server Actions): só UUIDs chegam à base de dados. */
+export const idSchema = z.uuid({ error: "Identificador inválido." });
+
 export const userSchema = z.object({
   name: z.string().trim().min(2, "Nome demasiado curto.").max(80),
   email: z.string().trim().min(1, "Indica o email.").email("Email inválido."),
-  password: z.string().min(8, "A password tem de ter pelo menos 8 caracteres."),
+  password: passwordSchema,
 });
 
 export const updateUserSchema = z.object({
@@ -51,7 +64,7 @@ export const categoryViewSchema = z.object({
 
 export const newPasswordSchema = z
   .object({
-    password: z.string().min(8, "A password tem de ter pelo menos 8 caracteres."),
+    password: passwordSchema,
     confirmPassword: z.string(),
   })
   .refine((data) => data.password === data.confirmPassword, {

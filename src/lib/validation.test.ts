@@ -1,10 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { categorySchema, categoryViewSchema, colorSchemeSchema, expenseSchema, loginSchema, userSchema } from "@/lib/validation";
+import { categorySchema, categoryViewSchema, colorSchemeSchema, expenseSchema, idSchema, loginSchema, userSchema } from "@/lib/validation";
 
 describe("expenseSchema", () => {
   it("aceita uma despesa válida", () => {
     const result = expenseSchema.safeParse({
-      categoryId: "cat-1",
+      categoryId: "0b6f1c2e-3d4a-4b5c-8d9e-0f1a2b3c4d5e",
       amount: "12.50",
       date: "2026-08-15",
       note: "  Pão e leite  ",
@@ -52,11 +52,25 @@ describe("categorySchema", () => {
 
 describe("userSchema", () => {
   it("rejeita password curta", () => {
-    expect(userSchema.safeParse({ name: "Ana", email: "ana@x.com", password: "1234567" }).success).toBe(false);
+    expect(userSchema.safeParse({ name: "Ana", email: "ana@x.com", password: "Curta1A" }).success).toBe(false);
+  });
+
+  it("rejeita password comprida mas sem variedade de caracteres", () => {
+    expect(userSchema.safeParse({ name: "Ana", email: "ana@x.com", password: "1234567890" }).success).toBe(false);
+    expect(userSchema.safeParse({ name: "Ana", email: "ana@x.com", password: "minusculas" }).success).toBe(false);
+    expect(userSchema.safeParse({ name: "Ana", email: "ana@x.com", password: "MAIUSCULAS" }).success).toBe(false);
   });
 
   it("aceita dados válidos", () => {
-    expect(userSchema.safeParse({ name: "Ana", email: "ana@x.com", password: "12345678" }).success).toBe(true);
+    expect(userSchema.safeParse({ name: "Ana", email: "ana@x.com", password: "Password123" }).success).toBe(true);
+  });
+});
+
+describe("idSchema", () => {
+  it("só aceita UUIDs", () => {
+    expect(idSchema.safeParse("0b6f1c2e-3d4a-4b5c-8d9e-0f1a2b3c4d5e").success).toBe(true);
+    expect(idSchema.safeParse("1 or 1=1").success).toBe(false);
+    expect(idSchema.safeParse("").success).toBe(false);
   });
 });
 
