@@ -1,44 +1,26 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
+import { useActionState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { criarClienteSupabase } from "@/lib/supabase/client";
+import { pedirLinkRecuperacao, type ActionState } from "@/app/forgot-password/actions";
+
+const estadoInicial: ActionState = { status: "idle" };
 
 export function ForgotPasswordForm() {
   const searchParams = useSearchParams();
   const linkInvalido = searchParams.get("erro") === "link_invalido";
 
-  const [email, setEmail] = useState("");
-  const [enviado, setEnviado] = useState(false);
-  const [aEnviar, setAEnviar] = useState(false);
+  // O pedido corre no servidor (src/app/forgot-password/actions.ts): o
+  // browser não fala com o fornecedor de autenticação. A resposta é sempre a
+  // mesma, quer o email exista como conta quer não.
+  const [state, formAction, aEnviar] = useActionState(pedirLinkRecuperacao, estadoInicial);
 
-  async function submeter(evento: FormEvent) {
-    evento.preventDefault();
-    setAEnviar(true);
-
-    const supabase = criarClienteSupabase();
-    const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${window.location.origin}/auth/callback`,
-    });
-
-    // Mostra sempre a mesma mensagem de sucesso, quer o email exista ou não
-    // como conta — revelar isso a quem não conhece as credenciais seria dar
-    // informação para tentar adivinhar contas válidas. O erro real (se
-    // algum) fica só na consola.
-    if (error) {
-      console.error("[recuperar password] Supabase respondeu com erro:", error.status, error.message);
-    }
-
-    setAEnviar(false);
-    setEnviado(true);
-  }
-
-  if (enviado) {
+  if (state.status === "enviado") {
     return (
       <div className="flex flex-col gap-3 text-center">
         <p className="text-sm">
-          Se existir uma conta com o email <strong>{email}</strong>, vais receber uma mensagem com um
+          Se existir uma conta com o email <strong>{state.email}</strong>, vais receber uma mensagem com um
           link para definires uma nova password.
         </p>
         <p className="text-xs text-foreground-muted">
@@ -52,18 +34,23 @@ export function ForgotPasswordForm() {
   }
 
   return (
-    <form onSubmit={submeter} className="flex flex-col gap-4">
+    <form action={formAction} className="flex flex-col gap-4">
       <label className="flex flex-col gap-1.5 text-sm font-medium">
         Email
         <input
+          name="email"
           type="email"
           autoComplete="email"
           required
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
           className="rounded-lg border border-border bg-surface px-3 py-2 text-sm outline-none focus:border-accent"
         />
       </label>
+
+      {state.status === "error" ? (
+        <p role="alert" className="text-sm font-medium text-danger">
+          {state.message}
+        </p>
+      ) : null}
 
       {linkInvalido && (
         <p role="alert" className="text-sm font-medium text-danger">
